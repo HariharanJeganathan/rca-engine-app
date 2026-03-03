@@ -6,3 +6,4 @@ openpyxl==3.1.2
 python-multipart==0.0.9
 PyMuPDF==1.23.26
 python-docx
+openai>=1.0.0

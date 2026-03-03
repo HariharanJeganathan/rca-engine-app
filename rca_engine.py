@@ -1,17 +1,26 @@
-import requests
 import re
 import json
 from typing import Dict, Optional
 from datetime import datetime
-from config import GROQ_API_KEY, GROQ_URL, SMART_MODEL, FAST_MODEL
+from openai import AzureOpenAI
+
+from config import (
+    AZURE_OPENAI_KEY,
+    AZURE_OPENAI_ENDPOINT,
+    AZURE_OPENAI_DEPLOYMENT,
+    SMART_MODEL,
+    FAST_MODEL
+)
 
 
 class RCAAgent:
     def __init__(self):
-        self.headers = {
-            "Authorization": f"Bearer {GROQ_API_KEY}",
-            "Content-Type": "application/json"
-        }
+        # Azure OpenAI Client
+        self.client = AzureOpenAI(
+            api_key=AZURE_OPENAI_KEY,
+            api_version="2024-02-15-preview",
+            azure_endpoint=AZURE_OPENAI_ENDPOINT
+        )
 
     # -------------------------------------------------
     # AI CALL
@@ -20,23 +29,25 @@ class RCAAgent:
         if not model:
             model = SMART_MODEL
 
-        payload = {
-            "model": model,
-            "messages": [
-                {"role": "system", "content": "You are an expert Root Cause Analysis investigator for enterprise IT incidents."},
-                {"role": "user", "content": prompt}
-            ],
-            "temperature": 0.3,
-            "max_tokens": max_tokens
-        }
-
         try:
-            r = requests.post(GROQ_URL, headers=self.headers, json=payload, timeout=60)
-            if r.status_code == 200:
-                return r.json()["choices"][0]["message"]["content"]
-            else:
-                print("AI Error:", r.text[:200])
-                return None
+            response = self.client.chat.completions.create(
+                model=AZURE_OPENAI_DEPLOYMENT,  # deployment name (gpt-4o)
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert Root Cause Analysis investigator for enterprise IT incidents."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                temperature=0.3,
+                max_tokens=max_tokens
+            )
+
+            return response.choices[0].message.content
+
         except Exception as e:
             print("AI Call Error:", e)
             return None
@@ -104,39 +115,40 @@ Return only heading sentence.
 
         prompt = f"""Generate detailed RCA investigation questions for this incident.
 
-        Incident Context:
-        Systems: {system_list}
-        Teams: {team_list}
-        Time: {time_str}
-        Impact: {details.get('impact', 'Service disruption')}
+Incident Context:
+Systems: {system_list}
+Teams: {team_list}
+Time: {time_str}
+Impact: {details.get('impact', 'Service disruption')}
 
-        Text Sample:
-        {text[:1200]}
+Text Sample:
+{text[:1200]}
 
-        Generate:
-        1. FIVE WHYS – 5 questions
-        2. CORRECTIVE ACTIONS – 3 questions
-        3. PREVENTIVE ACTIONS – 3 questions
-        4. GAP IDENTIFICATION – 3 questions
+Generate:
+1. FIVE WHYS – 5 questions
+2. CORRECTIVE ACTIONS – 3 questions
+3. PREVENTIVE ACTIONS – 3 questions
+4. GAP IDENTIFICATION – 3 questions
 
-        Rules:
-        - Questions must be specific to THIS incident
-        - Use actual system names
-        - Use actual team names
-        - No generic questions like "Why did system fail?"
-        - Questions should sound like real enterprise RCA investigation
-        - No explanations, only questions
-        - Return ONLY JSON
+Rules:
+- Questions must be specific to THIS incident
+- Use actual system names
+- Use actual team names
+- No generic questions like "Why did system fail?"
+- Questions should sound like real enterprise RCA investigation
+- No explanations, only questions
+- Return ONLY JSON
 
-        Return JSON:
-        {{
-        "probable_root_cause": "one clear technical sentence",
-        "five_whys": [],
-        "corrective_actions": [],
-        "preventive_actions": [],
-        "gap_identification": []
-        }}
-        """
+Return JSON:
+{{
+"probable_root_cause": "one clear technical sentence",
+"five_whys": [],
+"corrective_actions": [],
+"preventive_actions": [],
+"gap_identification": []
+}}
+"""
+
         response = self.call_ai(prompt, max_tokens=2200, model=SMART_MODEL)
 
         if response:
@@ -151,46 +163,48 @@ Return only heading sentence.
                 parsed = json.loads(response.strip())
 
                 return {
-                "probable_root_cause": parsed.get("probable_root_cause", f"Issue detected in {system_list}"),
-                "five_whys": parsed.get("five_whys", [])[:5],
-                "corrective_actions": parsed.get("corrective_actions", [])[:3],
-                "preventive_actions": parsed.get("preventive_actions", [])[:3],
-                "gap_identification": parsed.get("gap_identification", [])[:3],
-                "change_specific": []
-            }
+                    "probable_root_cause": parsed.get("probable_root_cause", f"Issue detected in {system_list}"),
+                    "five_whys": parsed.get("five_whys", [])[:5],
+                    "corrective_actions": parsed.get("corrective_actions", [])[:3],
+                    "preventive_actions": parsed.get("preventive_actions", [])[:3],
+                    "gap_identification": parsed.get("gap_identification", [])[:3],
+                    "change_specific": []
+                }
+
             except Exception as e:
                 print("JSON Parse Failed:", e)
 
-        # Soft dynamic fallback (not fixed generic)
+        # Soft fallback
         return {
-        "probable_root_cause": f"Service disruption occurred in {system_list}.",
-        "five_whys": [
-            f"Why did {system_list} fail at {time_str}?",
-            f"Why did {team_list} not detect earlier?",
-            "Why did monitoring not alert?",
-            "Why did the failure impact users?",
-            "Why was prevention missing?"
-        ],
-        "corrective_actions": [
-            f"What immediate action did {team_list} take?",
-            "What configuration or service was restored?",
-            "What rollback or restart was done?"
-        ],
-        "preventive_actions": [
-            "What monitoring improvement is needed?",
-            "What redundancy or automation should be added?",
-            "What validation checks should be enforced?"
-        ],
-        "gap_identification": [
-            "Which alert failed?",
-            "Which escalation step was delayed?",
-            "What process gap allowed this?"
-        ],
-        "change_specific": []
+            "probable_root_cause": f"Service disruption occurred in {system_list}.",
+            "five_whys": [
+                f"Why did {system_list} fail at {time_str}?",
+                f"Why did {team_list} not detect earlier?",
+                "Why did monitoring not alert?",
+                "Why did the failure impact users?",
+                "Why was prevention missing?"
+            ],
+            "corrective_actions": [
+                f"What immediate action did {team_list} take?",
+                "What configuration or service was restored?",
+                "What rollback or restart was done?"
+            ],
+            "preventive_actions": [
+                "What monitoring improvement is needed?",
+                "What redundancy or automation should be added?",
+                "What validation checks should be enforced?"
+            ],
+            "gap_identification": [
+                "Which alert failed?",
+                "Which escalation step was delayed?",
+                "What process gap allowed this?"
+            ],
+            "change_specific": []
         }
-        # -------------------------------------------------
-        # MAIN PROCESS
-        # -------------------------------------------------
+
+    # -------------------------------------------------
+    # MAIN PROCESS
+    # -------------------------------------------------
     def process_incident(self, whiteboard_text: str, mir_text: str = None, is_draft: bool = True) -> Dict:
 
         full_text = whiteboard_text or ""
