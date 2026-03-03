@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Enterprise RCA Engine</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      background: #000000;
+      color: #e5e7eb;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .container { max-width: 1400px; margin: auto; }
+    
+    header { 
+      text-align: center; 
+      padding: 30px 0; 
+      border-bottom: 2px solid #FF6200;
+      margin-bottom: 30px; 
+    }
+    
+    h1 { 
+      font-size: 2.2rem; 
+      color: #FF6200;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    
+    .subtitle { 
+      color: #A100FF;
+      margin-top: 5px; 
+      font-weight: 500;
+    }
+    
+    .card {
+      background: #1a1a1a;
+      border-radius: 12px;
+      padding: 28px;
+      margin-bottom: 20px;
+      border: 1px solid #2a2a2a;
+    }
+    
+    .hidden { display: none !important; }
+    
+    .tabs { 
+      display: flex; 
+      gap: 10px; 
+      margin-bottom: 20px; 
+    }
+    
+    .tab {
+      padding: 10px 20px;
+      background: #2a2a2a;
+      border: 1px solid #3a3a3a;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .tab:hover {
+      background: #3a3a3a;
+      border-color: #FF6200;
+    }
+    
+    .tab.active { 
+      background: #FF6200;
+      border-color: #FF6200;
+      color: white;
+    }
+    
+    .upload-section, .manual-section {
+      border: 2px dashed #3a3a3a;
+      padding: 30px;
+      border-radius: 10px;
+      text-align: center;
+      margin-bottom: 20px;
+      background: #0a0a0a;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .upload-section:hover, .manual-section:hover {
+      border-color: #FF6200;
+      background: #1a1a1a;
+    }
+    
+    .upload-section.has-file { 
+      border-color: #A100FF;
+      background: rgba(161, 0, 255, 0.1);
+    }
+    
+    textarea {
+      width: 100%;
+      min-height: 200px;
+      background: #0a0a0a;
+      border: 1px solid #3a3a3a;
+      color: #e5e7eb;
+      padding: 15px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      resize: vertical;
+    }
+    
+    textarea:focus {
+      outline: none;
+      border-color: #FF6200;
+    }
+    
+    button.primary {
+      background: linear-gradient(135deg, #FF6200, #FF8533);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.3s ease;
+    }
+    
+    button.primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(255, 98, 0, 0.3);
+    }
+    
+    button:disabled { 
+      background: #2a2a2a;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .section {
+      background: #1a1a1a;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      border-left: 4px solid #FF6200;
+    }
+    
+    .section h3 { 
+      color: #FF6200;
+      margin-bottom: 10px; 
+      font-size: 14px; 
+      text-transform: uppercase; 
+      font-weight: 600;
+    }
+    
+    .section p, .section li { 
+      color: #cbd5e1; 
+      line-height: 1.6; 
+    }
+    
+    .section ul { 
+      list-style: none;
+      padding: 0;
+    }
+    
+    .section li { 
+      margin-bottom: 8px;
+      padding-left: 20px;
+      position: relative;
+    }
+    
+    .section li:before {
+      content: "▸";
+      position: absolute;
+      left: 0;
+      color: #FF6200;
+    }
+    
+    .mir-section {
+      border: 2px dashed #3a3a3a;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+      text-align: center;
+      background: #1a1a1a;
+    }
+    
+    .save-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #1a1a1a;
+      border-top: 2px solid #FF6200;
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1000;
+    }
+    
+    .save-bar button { 
+      padding: 12px 24px; 
+      border-radius: 6px; 
+      border: none; 
+      cursor: pointer; 
+      font-weight: 600; 
+      transition: all 0.3s ease;
+    }
+    
+    .save-draft { 
+      background: #2a2a2a;
+      color: white; 
+      margin-right: 10px;
+      border: 1px solid #3a3a3a;
+    }
+    
+    .save-draft:hover {
+      background: #3a3a3a;
+      border-color: #FF6200;
+    }
+    
+    .save-final { 
+      background: linear-gradient(135deg, #A100FF, #C233FF);
+      color: white; 
+    }
+    
+    .save-final:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(161, 0, 255, 0.3);
+    }
+    
+    input[type="text"], select, input[type="file"] {
+      background: #1a1a1a;
+      border: 1px solid #3a3a3a;
+      color: white;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      width: 100%;
+    }
+    
+    input[type="text"]:focus, select:focus {
+      outline: none;
+      border-color: #FF6200;
+    }
+    
+    .editable {
+      background: transparent;
+      border: 1px dashed #3a3a3a;
+      padding: 8px;
+      border-radius: 4px;
+      width: 100%;
+      color: #e5e7eb;
+      font-family: inherit;
+    }
+    
+    .editable:focus {
+      border-color: #FF6200;
+      outline: none;
+      background: #0a0a0a;
+    }
+    
+    .incident-type-container {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      margin-top: 20px;
+      gap: 10px;
+    }
+    
+    .incident-type-container label {
+      color: #FF6200;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    
+    .incident-type-container select {
+      width: auto;
+      min-width: 200px;
+      margin: 0;
+      background: #1a1a1a;
+      border: 1px solid #FF6200;
+      padding: 8px 12px;
+      font-size: 14px;
+    }
+    
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    
+    .loading-spinner {
+      border: 5px solid #2a2a2a;
+      border-top: 5px solid #FF6200;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .loading-text {
+      margin-top: 20px;
+      color: #FF6200;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    
+    .loading-subtext {
+      margin-top: 10px;
+      color: #A100FF;
+      font-size: 14px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+  </style>
+</head>
+
+<body>
+<div class="container">
+
+<header>
+  <h1>🔍 Enterprise RCA Engine</h1>
+  <p class="subtitle">Root Cause Analysis & Incident Management</p>
+</header>
+
+<!-- STEP 1: INPUT SELECTION -->
+<div id="inputScreen" class="card">
+  <h2 style="color: #FF6200; margin-bottom: 10px;">Step 1: Incident Data Source</h2>
+  <p style="color: #94a3b8; margin-bottom: 20px;">Choose how to enter incident data</p>
+  
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('upload')">📁 Upload Whiteboard</button>
+    <button class="tab" onclick="switchTab('manual')">⌨️ Manual Entry</button>
+  </div>
+  
+  <!-- Upload Option -->
+  <div id="uploadTab" class="upload-section" onclick="document.getElementById('wbInput').click()">
+    <h3 style="color: #FF6200;">📊 Upload Whiteboard File</h3>
+    <p id="uploadStatus" style="color: #94a3b8; margin-top: 10px;">Click to select file (.xlsx, .xls, .pdf, .docx)</p>
+    <input type="file" id="wbInput" accept=".xlsx,.xls,.pdf,.docx" style="display:none" onchange="onFileSelect(this)">
+  </div>
+  
+  <!-- Manual Option -->
+  <div id="manualTab" class="manual-section hidden">
+    <h3 style="color: #FF6200;">📝 Manual Incident Entry</h3>
+    <p style="color: #94a3b8; margin: 10px 0;">Type or paste incident details:</p>
+    <textarea id="manualText" placeholder="Incident ID: INC123456&#10;System: Fuse&#10;Issue: Users unable to...&#10;Impact: ..."></textarea>
+  </div>
+  
+  <!-- Incident Type - RIGHT ALIGNED -->
+  <div class="incident-type-container">
+    <label>Incident Type:</label>
+    <select id="incidentType">
+      <option value="communicated">Communicated (Will have MIR later)</option>
+      <option value="non_communicated">Non-Communicated</option>
+    </select>
+  </div>
+  
+  <button class="primary" onclick="generateDraft()" style="margin-top: 20px; width: 100%;">
+    Generate RCA Analysis
+  </button>
+</div>
+
+<!-- STEP 2: ANALYSIS RESULTS -->
+<div id="resultsScreen" class="card hidden">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h2 style="color: #FF6200;">Step 2: Analysis Results</h2>
+    <button onclick="resetAll()" class="tab">← Start New</button>
+  </div>
+  
+  <div class="section">
+    <h3>🎯 Heading (Editable)</h3>
+    <input type="text" id="headingField" class="editable" value="">
+  </div>
+  
+  <div class="section">
+    <h3>🔍 Probable Root Cause</h3>
+    <textarea id="rootCauseField" class="editable" style="min-height: 60px;"></textarea>
+  </div>
+  
+  <!-- Questions Sections -->
+  <div id="questionsContainer"></div>
+  
+  <!-- MIR Upload (for communicated incidents) -->
+  <div id="mirSection" class="mir-section hidden">
+    <h3 style="color: #FF6200;">📄 Upload MIR Document</h3>
+    <p style="color: #94a3b8; margin: 10px 0;">Upload after MIR call to finalize analysis</p>
+    <input type="file" id="mirInput" accept=".xlsx,.xls,.pdf,.docx" style="display:block; margin:10px auto;">
+    <button onclick="uploadMir()" class="primary" style="margin-top: 10px;">Upload & Update Analysis</button>
+  </div>
+</div>
+
+<!-- BOTTOM SAVE BAR -->
+<div class="save-bar" id="saveBar" style="display: none;">
+  <div>
+    <span id="saveStatus" style="color: #94a3b8;">Draft saved automatically</span>
+  </div>
+  <div>
+    <button class="save-draft" onclick="saveDraft()">💾 Save Draft</button>
+    <button class="save-final" onclick="showFinalizeModal()">✅ Finalize RCA</button>
+  </div>
+</div>
+
+<!-- LOADING OVERLAY -->
+<div id="loadingOverlay" class="loading-overlay hidden">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Generating RCA Analysis...</div>
+  <div class="loading-subtext">Analyzing incident data and extracting key details</div>
+</div>
+
+</div>
+
+<script>
+const API = "http://127.0.0.1:8000";
+let currentRCA = null;
+let currentRCAId = null;
+let currentTab = 'upload';
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  
+  if (tab === 'upload') {
+    document.getElementById('uploadTab').classList.remove('hidden');
+    document.getElementById('manualTab').classList.add('hidden');
+  } else {
+    document.getElementById('uploadTab').classList.add('hidden');
+    document.getElementById('manualTab').classList.remove('hidden');
+  }
+}
+
+function onFileSelect(input) {
+  if (input.files[0]) {
+    document.getElementById('uploadStatus').innerHTML = '<span style="color: #A100FF; font-weight: 600;">✓ ' + input.files[0].name + '</span>';
+    document.querySelector('.upload-section').classList.add('has-file');
+  }
+}
+
+async function generateDraft() {
+  const type = document.getElementById('incidentType').value;
+  
+  showLoading();
+  
+  const fd = new FormData();
+  fd.append("incident_type", type);
+  fd.append("confirm_save", "false");  // Preview mode
+  
+  if (currentTab === 'upload') {
+    const file = document.getElementById('wbInput').files[0];
+    if (!file) {
+      hideLoading();
+      alert("Please select a file");
+      return;
+    }
+    fd.append("file", file);
+  } else {
+    const text = document.getElementById('manualText').value;
+    if (!text || text.length < 50) {
+      hideLoading();
+      alert("Please enter incident details (at least 50 characters)");
+      return;
+    }
+    fd.append("text_input", text);
+  }
+  
+  try {
+    console.log("Calling /create-draft...");
+    
+    const res = await fetch(`${API}/create-draft`, {
+      method: "POST",
+      body: fd
+    });
+    
+    console.log("Response status:", res.status);
+    
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error("Error response:", errorText);
+      throw new Error(errorText);
+    }
+    
+    const data = await res.json();
+    console.log("Success:", data);
+    
+    currentRCA = data.data;
+    currentRCAId = data.rca_id;
+    
+    hideLoading();
+    showResults(data.data, type);
+    
+  } catch (e) {
+    hideLoading();
+    alert("Error: " + e.message);
+    console.error("Full error:", e);
+  }
+}
+
+function showLoading() {
+  document.getElementById('loadingOverlay').classList.remove('hidden');
+}
+
+function hideLoading() {
+  document.getElementById('loadingOverlay').classList.add('hidden');
+}
+
+function showResults(data, type) {
+  document.getElementById('inputScreen').classList.add('hidden');
+  document.getElementById('resultsScreen').classList.remove('hidden');
+  document.getElementById('saveBar').style.display = 'flex';
+  
+  // Fill fields
+  document.getElementById('headingField').value = data.heading || '';
+  document.getElementById('rootCauseField').value = data.probable_root_cause || '';
+  
+  // Show questions
+  const container = document.getElementById('questionsContainer');
+  container.innerHTML = '';
+  
+  const sections = [
+    ['five_whys', 'Five Whys (Deep Investigation)', '❓'],
+    ['corrective_actions', 'Corrective Actions', '🔧'],
+    ['preventive_actions', 'Preventive Actions', '🛡️'],
+    ['gap_identification', 'Gap Identification', '🔍'],
+    ['change_specific', 'Change-Specific Questions', '⚠️']
+  ];
+  
+  sections.forEach(([key, title, icon]) => {
+    const questions = data.sections && data.sections[key] ? data.sections[key] : [];
+    if (questions.length === 0) return;
+    
+    const div = document.createElement('div');
+    div.className = 'section';
+    div.innerHTML = `
+      <h3>${icon} ${title}</h3>
+      <ul>
+        ${questions.map((q, i) => `
+          <li>
+            <input type="text" class="editable" value="${q.replace(/"/g, '&quot;')}" 
+                   style="width: 100%; margin-bottom: 5px;" 
+                   onchange="updateQuestion('${key}', ${i}, this.value)">
+          </li>
+        `).join('')}
+      </ul>
+    `;
+    container.appendChild(div);
+  });
+  
+  // Show MIR section if communicated
+  if (type === 'communicated') {
+    document.getElementById('mirSection').classList.remove('hidden');
+  }
+}
+
+function updateQuestion(section, index, value) {
+  if (currentRCA && currentRCA.sections && currentRCA.sections[section]) {
+    currentRCA.sections[section][index] = value;
+  }
+}
+
+async function saveDraft() {
+  if (!currentRCAId) return;
+  
+  if (currentRCA) {
+    currentRCA.heading = document.getElementById('headingField').value;
+    currentRCA.probable_root_cause = document.getElementById('rootCauseField').value;
+  }
+  
+  try {
+    const res = await fetch(`${API}/update-rca/${currentRCAId}`, {
+      method: "POST",
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({rca_data: currentRCA})
+    });
+    
+    if (res.ok) {
+      document.getElementById('saveStatus').innerHTML = '<span style="color: #A100FF;">✓ Saved at ' + new Date().toLocaleTimeString() + '</span>';
+    }
+  } catch (e) {
+    alert("Save failed: " + e.message);
+  }
+}
+
+async function uploadMir() {
+  const file = document.getElementById('mirInput').files[0];
+  if (!file) {
+    alert("Select MIR file first");
+    return;
+  }
+  
+  showLoading();
+  
+  const fd = new FormData();
+  fd.append("mir_file", file);
+  
+  try {
+    const res = await fetch(`${API}/add-mir/${currentRCAId}`, {
+      method: "POST",
+      body: fd
+    });
+    
+    if (!res.ok) throw new Error(await res.text());
+    
+    const data = await res.json();
+    currentRCA = data.data;
+    
+    hideLoading();
+    
+    showResults(data.data, 'communicated');
+    alert("MIR added! Analysis updated.");
+    
+  } catch (e) {
+    hideLoading();
+    alert("MIR upload failed: " + e.message);
+  }
+}
+
+function showFinalizeModal() {
+  const finalRoot = prompt("Enter confirmed Final Root Cause:");
+  if (!finalRoot) return;
+  
+  const corrective = prompt("Enter Corrective Actions (comma separated):");
+  const preventive = prompt("Enter Preventive Actions (comma separated):");
+  
+  showLoading();
+  
+  fetch(`${API}/finalize/${currentRCAId}`, {
+    method: "POST",
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      final_root_cause: finalRoot,
+      corrective_actions: corrective ? corrective.split(',').map(s => s.trim()) : [],
+      preventive_actions: preventive ? preventive.split(',').map(s => s.trim()) : []
+    })
+  }).then(() => {
+    hideLoading();
+    alert("RCA Finalized!");
+    window.location.reload();
+  }).catch(e => {
+    hideLoading();
+    alert("Finalization failed: " + e.message);
+  });
+}
+
+function resetAll() {
+  window.location.reload();
+}
+</script>
+</body>
+</html>
